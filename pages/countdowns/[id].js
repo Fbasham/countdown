@@ -19,9 +19,14 @@ export default function CountdownPage(props) {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ day: new Date(), countdown: countdown._id }),
       });
-      return await res.json();
+      return res;
     };
-    f();
+    let r = f();
+    r.then((e) => {
+      if (e.ok) {
+        return refresh();
+      }
+    });
   }, []);
 
   async function handleSubmit(e) {

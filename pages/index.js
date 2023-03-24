@@ -2,17 +2,35 @@ import { useRouter } from "next/router";
 import Link from "next/link";
 import dbConnect from "../lib/dbConnect";
 import Countdown from "../models/Countdown";
+import { useState } from "react";
 
-export default function Home({ countdowns }) {
+export default function Home(props) {
   let router = useRouter();
-  countdowns = JSON.parse(countdowns);
+  let [countdowns, setCountdowns] = useState(JSON.parse(props.countdowns));
+
+  function handleFilter(e) {
+    e.preventDefault();
+    let re = new RegExp(`${e.target.filter.value || "."}`, "i");
+    let filteredCountdowns = countdowns.filter((c) => re.test(c.name));
+    if (!e.target.filter.value || !filteredCountdowns.length) {
+      setCountdowns(JSON.parse(props.countdowns));
+      return;
+    }
+    setCountdowns(filteredCountdowns);
+  }
 
   async function handleSubmit(e) {
     e.preventDefault();
     let name = e.target["countdown-name"].value;
     let start = e.target["countdown-start"].value;
     let end = e.target["countdown-end"].value;
-    if (!name.trim() || !start || !end || new Date(end) - new Date(start) < 0)
+    if (
+      !name.trim() ||
+      !start ||
+      !end ||
+      new Date(end) - new Date(start) < 0 ||
+      new Date(end) < new Date()
+    )
       return;
 
     let res = await fetch("/api/createCountdown", {
@@ -27,9 +45,12 @@ export default function Home({ countdowns }) {
   return (
     <div className="mx-10">
       <h1 className="text-2xl font-bold my-10">Welcome [username]</h1>
-      <div className="flex justify-evenly w-full gap-10">
-        <div className="border-2 p-2 rounded w-full">
+      <div className="flex justify-evenly w-full gap-10 max-h-[350px]">
+        <div className="border-2 p-2 rounded w-full overflow-y-scroll">
           <h2 className="text-lg font-semibold mb-5">Recent Countdowns</h2>
+          <form onSubmit={handleFilter}>
+            <input id="filter" placeholder="filter" className="px-2 mb-2" />
+          </form>
           <ul className="underline italic list-inside">
             {countdowns.map((c) => (
               <li key={c._id}>
