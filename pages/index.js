@@ -3,22 +3,22 @@ import Link from "next/link";
 import dbConnect from "../lib/dbConnect";
 import Countdown from "../models/Countdown";
 
-export default function Home() {
+export default function Home({ countdowns }) {
   let router = useRouter();
+  countdowns = JSON.parse(countdowns);
 
   async function handleSubmit(e) {
     e.preventDefault();
-    let id = e.target["countdown-name"].value;
+    let name = e.target["countdown-name"].value;
     let start = e.target["countdown-start"].value;
     let end = e.target["countdown-end"].value;
-    if (!id.trim() || !start || !end || new Date(end) - new Date(start) < 0)
+    if (!name.trim() || !start || !end || new Date(end) - new Date(start) < 0)
       return;
 
-    //todo API route to create countdown => insert into DB => get id in return and route to dynamic page:
     let res = await fetch("/api/createCountdown", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ id, start, end }),
+      body: JSON.stringify({ name, start, end }),
     });
     let data = await res.json();
     router.push(`/countdowns/${data.id}`);
@@ -31,15 +31,11 @@ export default function Home() {
         <div className="border-2 p-2 rounded w-full">
           <h2 className="text-lg font-semibold mb-5">Recent Countdowns</h2>
           <ul className="underline italic list-inside">
-            <li>
-              <Link href="countdowns/c1">c1</Link>
-            </li>
-            <li>
-              <Link href="countdowns/c2">c2</Link>
-            </li>
-            <li>
-              <Link href="countdowns/c3">c3</Link>
-            </li>
+            {countdowns.map((c) => (
+              <li key={c._id}>
+                <Link href={`/countdowns/${c._id}`}>{c.name}</Link>
+              </li>
+            ))}
           </ul>
         </div>
         <div className="border-2 rounded p-2 w-full">
@@ -93,11 +89,12 @@ export default function Home() {
 export async function getServerSideProps() {
   await dbConnect();
 
-  console.log(await Countdown.find());
+  let countdowns = await Countdown.find();
 
   return {
     props: {
       title: "home",
+      countdowns: JSON.stringify(countdowns),
     },
   };
 }
